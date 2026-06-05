@@ -1,0 +1,37 @@
+## .NET 构建产物
+bin/
+obj/
+publish/
+*.user
+*.suo
+.vs/
+
+## 临时文件
+*.tmp
+*.bak
+~$*
+
+## 系统文件
+Thumbs.db
+.DS_Store
+desktop.ini
+
+## NuGet
+*.nupkg
+*.snupkg
+packages/
+
+## 临时生成的包
+*.zip
+!releases/*.zip
+
+## 发布 / 备份目录
+publish/
+dump-publish/
+TempWidget-bin/
+TempWidget-src/
+releases/
+
+## 运行时生成的临时文件
+TempWidget_sensors.txt
+*.log
