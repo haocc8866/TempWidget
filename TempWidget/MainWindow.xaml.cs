@@ -401,7 +401,10 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// 平滑调整窗口大小 (横竖版旋转动画), 300ms Quadratic EaseInOut
+    /// 调整窗口大小 + 位置
+    /// 策略: 位置 (Left) 用动画, 尺寸 (Width/Height) 直接赋值
+    /// 原因: BeginAnimation 改 Width/Height 在 WPF 里行为不可靠 (依赖属性同步竞态),
+    ///       切来切去会变正方形/卡在中间值. 直接赋值 + 位置动画达到类似效果
     /// onCompleted: 全部动画完成后回调, 用于动画后吸边等操作
     /// </summary>
     private void AnimateSize(double targetW, double targetH, double? targetLeft, Action? onCompleted = null)
@@ -412,21 +415,13 @@ public partial class MainWindow : Window
         BeginAnimation(LeftProperty, null);
         BeginAnimation(TopProperty, null);
 
-        // 2. 关键修复: 强制 layout pass + 同步依赖属性
-        //    BeginAnimation(null) 后依赖属性行为不一致: Width 回 base, Height 可能保持动画中值
-        //    ActualWidth/ActualHeight 也未必立即更新
-        //    必须先 UpdateLayout() 同步, 再赋值, 启动新动画 from 才能准
-        UpdateLayout();
-        Width = ActualWidth;
-        Height = ActualHeight;
-
         const double durationMs = 300;
         var easing = new QuadraticEase { EasingMode = EasingMode.EaseInOut };
 
         int pending = 0;
         void CheckDone() { if (--pending == 0) onCompleted?.Invoke(); }
 
-        // 如果传了 targetLeft, 同步动画移动 Left (防越界)
+        // 2. 位置 (Left) 用动画: 防越界平滑移动
         if (targetLeft.HasValue && Math.Abs(targetLeft.Value - Left) > 0.1)
         {
             pending++;
@@ -435,26 +430,12 @@ public partial class MainWindow : Window
             BeginAnimation(LeftProperty, animLeft);
         }
 
-        // 关键: from 用 Width/Height (依赖属性) 而不是 ActualWidth/ActualHeight
-        // 因为 ActualWidth 反映的是当前 layout 后的值, 而 Width 是依赖属性 (动画基值)
-        // 我们刚把 Width 同步到 ActualWidth, 现在 Width 就是可靠的"当前真实值"
-        if (Math.Abs(Width - targetW) > 0.5)
-        {
-            pending++;
-            var animWidth = new DoubleAnimation(Width, targetW, TimeSpan.FromMilliseconds(durationMs)) { EasingFunction = easing };
-            animWidth.Completed += (_, _) => CheckDone();
-            BeginAnimation(WidthProperty, animWidth);
-        }
+        // 3. 尺寸 (Width/Height) 直接赋值: 跳过 BeginAnimation 不可靠行为
+        //    位置还在动, 尺寸瞬间切, 视觉上像 dock 一样
+        Width = targetW;
+        Height = targetH;
 
-        if (Math.Abs(Height - targetH) > 0.5)
-        {
-            pending++;
-            var animHeight = new DoubleAnimation(Height, targetH, TimeSpan.FromMilliseconds(durationMs)) { EasingFunction = easing };
-            animHeight.Completed += (_, _) => CheckDone();
-            BeginAnimation(HeightProperty, animHeight);
-        }
-
-        // 距离太近没启动任何动画, 立即回调
+        // 没动画要等, 立即回调
         if (pending == 0) onCompleted?.Invoke();
     }
 
