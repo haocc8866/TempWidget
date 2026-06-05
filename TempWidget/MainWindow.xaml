@@ -5,7 +5,7 @@
         xmlns:conv="clr-namespace:TempWidget.Converters"
         xmlns:tb="http://www.hardcodet.net/taskbar"
         Title="温度小窗"
-        Height="90" Width="50"
+        Height="110" Width="50"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
@@ -32,7 +32,7 @@
                 Background="#E60E0E14"
                 BorderBrush="#33FFFFFF"
                 BorderThickness="1"
-                Padding="4,5">
+                Padding="0,6">
             <Border.Effect>
                 <DropShadowEffect Color="Black" Opacity="0.4" BlurRadius="10" ShadowDepth="0"/>
             </Border.Effect>
@@ -55,21 +55,21 @@
                     <StackPanel HorizontalAlignment="Center" Margin="0,2">
                         <TextBlock Text="CPU"
                                    Foreground="#AAFFFFFF"
-                                   FontSize="7"
+                                   FontSize="9"
                                    FontWeight="SemiBold"
                                    HorizontalAlignment="Center"/>
                         <StackPanel Orientation="Horizontal"
                                     HorizontalAlignment="Center"
                                     Margin="0,1,0,0">
                             <TextBlock Text="{Binding CpuTemp, Converter={StaticResource TempText}}"
-                                       FontSize="16"
+                                       FontSize="18"
                                        FontWeight="Bold"
                                        Foreground="{Binding CpuTemp, Converter={StaticResource TempColor}}"/>
                             <TextBlock Text="°"
-                                       FontSize="8"
+                                       FontSize="9"
                                        Foreground="#88FFFFFF"
                                        VerticalAlignment="Top"
-                                       Margin="1,2,0,0"/>
+                                       Margin="1,3,0,0"/>
                         </StackPanel>
                     </StackPanel>
 
@@ -79,21 +79,21 @@
                     <StackPanel HorizontalAlignment="Center" Margin="0,2">
                         <TextBlock Text="GPU"
                                    Foreground="#AAFFFFFF"
-                                   FontSize="7"
+                                   FontSize="9"
                                    FontWeight="SemiBold"
                                    HorizontalAlignment="Center"/>
                         <StackPanel Orientation="Horizontal"
                                     HorizontalAlignment="Center"
                                     Margin="0,1,0,0">
                             <TextBlock Text="{Binding GpuTemp, Converter={StaticResource TempText}}"
-                                       FontSize="16"
+                                       FontSize="18"
                                        FontWeight="Bold"
                                        Foreground="{Binding GpuTemp, Converter={StaticResource TempColor}}"/>
                             <TextBlock Text="°"
-                                       FontSize="8"
+                                       FontSize="9"
                                        Foreground="#88FFFFFF"
                                        VerticalAlignment="Top"
-                                       Margin="1,2,0,0"/>
+                                       Margin="1,3,0,0"/>
                         </StackPanel>
                     </StackPanel>
                 </StackPanel>
@@ -133,7 +133,7 @@
                             </StackPanel>
                         </StackPanel>
                         <ProgressBar Grid.Row="1"
-                                     Value="{Binding CpuTempPercent}"
+                                     Value="{Binding CpuTempPercent, Mode=OneWay}"
                                      Maximum="100"
                                      Height="3"
                                      Foreground="{Binding CpuTemp, Converter={StaticResource TempColor}}"
@@ -171,7 +171,7 @@
                             </StackPanel>
                         </StackPanel>
                         <ProgressBar Grid.Row="1"
-                                     Value="{Binding GpuTempPercent}"
+                                     Value="{Binding GpuTempPercent, Mode=OneWay}"
                                      Maximum="100"
                                      Height="3"
                                      Foreground="{Binding GpuTemp, Converter={StaticResource TempColor}}"
@@ -198,6 +198,12 @@
                               Header="开机启动"
                               IsCheckable="True"
                               Click="AutoStart_Click"/>
+                    <MenuItem Header="温度刷新时间">
+                        <MenuItem x:Name="Refresh1s" Header="1秒" IsCheckable="True" Tag="1" Click="RefreshInterval_Click"/>
+                        <MenuItem x:Name="Refresh3s" Header="3秒" IsCheckable="True" Tag="3" Click="RefreshInterval_Click"/>
+                        <MenuItem x:Name="Refresh6s" Header="6秒" IsCheckable="True" Tag="6" Click="RefreshInterval_Click"/>
+                    </MenuItem>
+                    <MenuItem Header="诊断: 导出 sensor 列表" Click="DumpSensors_Click"/>
                     <Separator/>
                     <MenuItem Header="退出" Click="Exit_Click"/>
                 </ContextMenu>

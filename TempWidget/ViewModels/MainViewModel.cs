@@ -66,6 +66,28 @@ public class MainViewModel : INotifyPropertyChanged, IDisposable
         }
     }
 
+    private int _refreshIntervalSeconds = 1;
+    /// <summary>温度刷新周期 (秒), 1/3/6, 切换时自动更新 Timer</summary>
+    public int RefreshIntervalSeconds
+    {
+        get => _refreshIntervalSeconds;
+        set
+        {
+            if (value != 1 && value != 3 && value != 6)
+                value = 3;
+            if (_refreshIntervalSeconds == value) return;
+            _refreshIntervalSeconds = value;
+            OnPropertyChanged();
+            UpdateTimerInterval();
+        }
+    }
+
+    private void UpdateTimerInterval()
+    {
+        if (_timer != null)
+            _timer.Interval = TimeSpan.FromSeconds(_refreshIntervalSeconds);
+    }
+
     // ----- 构造与生命周期 -----
 
     public MainViewModel()
@@ -81,8 +103,8 @@ public class MainViewModel : INotifyPropertyChanged, IDisposable
         // 2) 定位精确名称的 sensor
         LocateSensors();
 
-        // 3) 1 秒周期 DispatcherTimer
-        _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        // 3) DispatcherTimer 周期由 RefreshIntervalSeconds 控制 (默认 1 秒)
+        _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(_refreshIntervalSeconds) };
         _timer.Tick += (_, _) => Tick();
         _timer.Start();
 
@@ -162,6 +184,48 @@ public class MainViewModel : INotifyPropertyChanged, IDisposable
         catch
         {
             // 静默, 下一 tick 继续
+        }
+    }
+
+    /// <summary>
+    /// 诊断: 把当前所有硬件 + sensor 写到 %TEMP%\TempWidget_sensors.txt
+    /// 用来排查 "温度一直是 —" 问题
+    /// </summary>
+    public string DumpSensors()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine($"=== TempWidget Sensor Dump @ {DateTime.Now:yyyy-MM-dd HH:mm:ss} ===");
+        sb.AppendLine($"CPU sensor: {_cpuSensor?.Name ?? "(none)"} = {_cpuSensor?.Value}");
+        sb.AppendLine($"GPU sensor: {_gpuSensor?.Name ?? "(none)"} = {_gpuSensor?.Value}");
+        sb.AppendLine();
+
+        int hwCount = 0, sensorCount = 0;
+        foreach (var hw in _computer.Hardware)
+        {
+            hwCount++;
+            try { hw.Update(); } catch { }
+            sb.AppendLine($"[{hw.HardwareType}] {hw.Name}");
+            foreach (var s in hw.Sensors)
+            {
+                if (s.SensorType != SensorType.Temperature) continue;
+                sensorCount++;
+                var val = s.Value.HasValue ? $"{s.Value.Value:F1}" : "(null)";
+                var marker = (s == _cpuSensor || s == _gpuSensor) ? "  ←" : "";
+                sb.AppendLine($"  [{s.SensorType}] {s.Name} = {val}°C{marker}");
+            }
+        }
+        sb.AppendLine();
+        sb.AppendLine($"Total: {hwCount} hardware, {sensorCount} temperature sensors");
+
+        try
+        {
+            var path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "TempWidget_sensors.txt");
+            System.IO.File.WriteAllText(path, sb.ToString());
+            return path;
+        }
+        catch
+        {
+            return "";
         }
     }
 
