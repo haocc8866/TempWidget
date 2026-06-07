@@ -35,3 +35,6 @@ releases/
 ## 运行时生成的临时文件
 TempWidget_sensors.txt
 *.log
+
+## codegraph 守护进程临时文件
+.codegraph/
