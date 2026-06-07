@@ -1,0 +1,41 @@
+name: Build and Package TempWidget
+
+# 触发条件：当推送到 main 分支，或者在 Actions 页面手动点击运行 (workflow_dispatch)
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    # 关键：WPF 编译必须在 Windows 系统虚拟机上运行
+    runs-on: windows-latest
+
+    steps:
+    # 1. 检出（下载）你的代码
+    - name: Checkout Source Code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    # 2. 在云端安装 .NET 8 SDK
+    - name: Setup .NET Core SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    # 3. 还原 NuGet 依赖项
+    - name: Restore Dependencies
+      run: dotnet restore TempWidget.csproj
+
+    # 4. 执行在线编译打包（发布为独立的单个 EXE 文件，无需用户电脑安装.NET运行库）
+    - name: Publish Single File EXE
+      run: |
+        dotnet publish TempWidget.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./publish
+
+    # 5. 将打包好的软件作为工件（Artifact）上传，供你在浏览器直接下载
+    - name: Upload Build Artifact
+      uses: actions/artifacts/upload-artifact@v4
+      with:
+        name: TempWidget-ReadyToRun
+        path: ./publish/
